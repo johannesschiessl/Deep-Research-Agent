@@ -16,7 +16,9 @@ def display_plan(plan: ResearchPlan) -> None:
     """Display the research plan in a beautiful format"""
     console.print("\n")
     console.print(Panel(
-        f"[bold green]Reasoning:[/bold green]\n{plan.reasoning}",
+        f"[bold blue]Research Query:[/bold blue]\n{plan.query}\n\n"
+        f"[bold green]Reasoning:[/bold green]\n{plan.reasoning}\n\n"
+        f"[bold yellow]Run ID:[/bold yellow] {plan.run_id}",
         title="Research Plan",
         border_style="blue"
     ))
@@ -56,10 +58,11 @@ def research():
         transient=True,
     ) as progress:
         progress.add_task(description="Creating research plan...", total=None)
-        plan = planner.create_initial_plan(query)
+        plan, run_dir = planner.create_initial_plan(query)
 
     display_plan(plan)
-
+    
+    console.print(f"\n[bold cyan]Plan saved to:[/bold cyan] {run_dir / 'plan.json'}")
     console.print("\n[bold blue]Press Enter to approve the plan[/bold blue]")
     input()
 
