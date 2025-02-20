@@ -1,7 +1,10 @@
-from typing import List
+from typing import List, Tuple
 import os
+from pathlib import Path
 from pydantic import BaseModel, Field
 from openai import OpenAI
+
+from utils.file_utils import create_run_directory, save_plan_to_json
 
 class ResearchStep(BaseModel):
     """A single step in the research plan"""
@@ -10,8 +13,10 @@ class ResearchStep(BaseModel):
 
 class ResearchPlan(BaseModel):
     """The complete research plan"""
+    query: str = Field(..., description="The original research query")
     reasoning: str = Field(..., description="The planner's reasoning about how to approach the research")
     steps: List[ResearchStep] = Field(..., description="The ordered steps to conduct the research")
+    run_id: str | None = Field(None, description="Unique identifier for this research run")
 
 class PlannerAgent:
     def __init__(self):
@@ -19,8 +24,9 @@ class PlannerAgent:
         if not os.getenv("OPENAI_API_KEY"):
             raise ValueError("OPENAI_API_KEY environment variable is required")
 
-    def create_initial_plan(self, query: str) -> ResearchPlan:
-        """Create an initial research plan based on the user's query"""
+    def create_initial_plan(self, query: str) -> Tuple[ResearchPlan, Path]:
+        """Create an initial research plan based on the user's query and save it"""
+        run_dir, run_id = create_run_directory()
         
         response = self.client.beta.chat.completions.parse(
             model="gpt-4o-mini",
@@ -38,7 +44,7 @@ class PlannerAgent:
                         "steps": [
                             {
                                 "instruction": "detailed instruction of what needs to be researched",
-                                "expected_outcome": "what this step should yield",
+                                "expected_outcome": "what this step should yield"
                             },
                             ...
                         ]
@@ -50,5 +56,14 @@ class PlannerAgent:
                 }
             ]
         )
-
-        return response.choices[0].message.parsed
+        
+        plan = response.choices[0].message.parsed
+        
+        plan_dict = plan.model_dump()
+        plan_dict["query"] = query
+        plan_dict["run_id"] = run_id
+        final_plan = ResearchPlan(**plan_dict)
+        
+        save_plan_to_json(final_plan, run_dir)
+        
+        return final_plan, run_dir
