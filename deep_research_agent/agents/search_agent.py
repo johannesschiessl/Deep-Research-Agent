@@ -57,7 +57,7 @@ class SearchAgent:
         """Execute a web search using OpenAI's web search API"""
         tools = [{
             "type": "web_search_preview",
-            "search_context_size": "medium"
+            "search_context_size": "low"
         }]
         
         if user_location:
@@ -69,7 +69,7 @@ class SearchAgent:
         try:
             print("Calling OpenAI API...")
             response = self.client.responses.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 tools=tools,
                 input=query
             )
