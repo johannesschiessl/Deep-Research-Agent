@@ -12,6 +12,7 @@ import json
 
 from agents.planner_agent import PlannerAgent, ResearchPlan
 from agents.search_agent import SearchAgent
+from agents.report_agent import ReportAgent
 
 app = typer.Typer()
 console = Console()
@@ -56,6 +57,20 @@ def display_search_results(search_summary_path):
         ))
     except Exception as e:
         console.print(f"[bold red]Error displaying search results: {e}[/bold red]")
+
+def display_markdown_file(file_path):
+    """Display the contents of a markdown file"""
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        console.print(Panel(
+            Markdown(content),
+            title="Research Report",
+            border_style="green"
+        ))
+    except Exception as e:
+        console.print(f"[bold red]Error displaying markdown file: {e}[/bold red]")
 
 @app.command()
 def research():
@@ -151,6 +166,37 @@ def research():
                     
                     console.print(f"\n[bold cyan]Research Summary:[/bold cyan]")
                     display_search_results(combined_summary_path)
+                    
+                    generate_report = Prompt.ask(
+                        "\n[bold blue]Would you like to generate a comprehensive research report?[/bold blue]",
+                        choices=["y", "n"],
+                        default="y"
+                    )
+                    
+                    if generate_report.lower() == "y":
+                        try:
+                            console.print("\n[bold cyan]Generating comprehensive research report...[/bold cyan]")
+                            
+                            with Progress(
+                                SpinnerColumn(),
+                                TextColumn("[progress.description]{task.description}"),
+                                transient=True,
+                            ) as progress:
+                                progress.add_task(description="Generating report...", total=None)
+                                report_agent = ReportAgent()
+                                report_path = report_agent.generate_and_save_report(plan, search_results, run_dir)
+                            
+                            console.print(f"\n[bold green]Research report generated![/bold green]")
+                            console.print(f"[bold cyan]Report saved to:[/bold cyan] {report_path}")
+                            
+                            console.print(f"\n[bold cyan]Research Report:[/bold cyan]")
+                            display_markdown_file(report_path)
+                        except Exception as e:
+                            console.print(f"[bold red]Error generating research report:[/bold red] {str(e)}")
+                            traceback.print_exc()
+                    else:
+                        console.print("\n[bold yellow]Report generation skipped.[/bold yellow]")
+                    
                 except Exception as e:
                     console.print(f"[bold red]Error creating research summary:[/bold red] {str(e)}")
                     traceback.print_exc()
