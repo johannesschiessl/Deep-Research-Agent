@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from pydantic import BaseModel, Field
 from openai import OpenAI
+from dotenv import load_dotenv
 
 from utils.file_utils import create_run_directory, save_plan_to_json
 
@@ -20,9 +21,13 @@ class ResearchPlan(BaseModel):
 
 class PlannerAgent:
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        if not os.getenv("OPENAI_API_KEY"):
+        load_dotenv()
+        
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable is required")
+            
+        self.client = OpenAI(api_key=api_key)
 
     def create_initial_plan(self, query: str) -> Tuple[ResearchPlan, Path]:
         """Create an initial research plan based on the user's query and save it"""
